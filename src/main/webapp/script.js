@@ -71,7 +71,7 @@ submit.addEventListener('click',async function (e) {
         let xFloat = parseFloat(chooseX.value);
         let yFloat = parseFloat(chooseY.value);
         let rFloat = parseFloat(selectR.value);
-        let response = await fetch(new URL("controller?" + "x=" + xFloat + "&y=" + yFloat + "&r=" + rFloat, window.location.href), {
+        let response = await fetch(new URL("controller?" + "x=" + xFloat + "&y=" + yFloat + "&r=" + rFloat + "&action=form", window.location.href), {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -85,6 +85,7 @@ submit.addEventListener('click',async function (e) {
             })
         const data = response
         addOneRowToTable(data);
+        safeToStorage(data);
         drawPoint(xFloat, yFloat, rFloat, data.result);
     }
 })
@@ -112,11 +113,13 @@ async function checkPoint(x, y, r) {
     const response = await fetch(url, { method: "get" });
 
     if (!response.ok) {
-        alert("123")
+        throw new Error(response.statusText)
     }
 
     const data = await response.json();
-    if (data.error) alert("123")
 
+    if (data.error) {
+        throw new Error(response.statusText);
+    }
     return data;
 }

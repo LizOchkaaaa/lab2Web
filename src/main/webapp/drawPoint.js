@@ -1,5 +1,32 @@
+const error = document.getElementById("errorText")
+let pointX;
+let pointY;
+let pointR;
+let pointResult;
+
+function safeToStorage(data){
+    pointX = localStorage.getItem("arrayX");
+    pointY = localStorage.getItem("arrayY");
+    pointR = localStorage.getItem("arrayR");
+    pointResult = localStorage.getItem("arrayResult");
+    if (pointX == null){
+        pointX = "";
+        pointY = "";
+        pointR = "";
+        pointResult = "";
+
+    }
+    pointX += data["x"] + " ";
+    pointY += data["y"] + " ";
+    pointR += data["r"] + " ";
+    pointResult += data["result"] + " ";
+    localStorage.setItem("arrayX", pointX);
+    localStorage.setItem("arrayY", pointY);
+    localStorage.setItem("arrayR", pointR);
+    localStorage.setItem("arrayResult", pointResult);
+}
 function drawPoint(x, y, r, result) {
-    [x, y] = untransformed(x, y, r)
+    [x, y] = untransforme(x, y, r)
     let circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("cx", x);
     circle.setAttribute("cy", y);
@@ -11,26 +38,39 @@ function drawPoint(x, y, r, result) {
 async function sendCoordinatesToServer(x, y, r) {
     const data = await checkPoint(x, y, r);
 
-    if (!data.error) {
+    if (data["code"] == null) {
+        safeToStorage(data);
         drawPoint(x, y, r, data.result);
         addOneRowToTable(data);
+    }
+    else {
+        error.textContent = data["message"];
+        setTimeout(() =>{
+            error.textContent = ""
+        }, 2000);
     }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    const table = document.getElementById("output");
+        let pointX = localStorage.getItem("arrayX");
+        let pointY  = localStorage.getItem("arrayY");
+        let pointR = localStorage.getItem("arrayR");
+        let pointResult = localStorage.getItem("arrayResult");
+        if (pointX != null && pointY != null && pointR != null && pointResult != null) {
+            pointX = pointX.split(" ");
+            pointY = pointY.split(" ");
+            pointR = pointR.split(" ");
+            pointResult  = pointResult.split(" ");
+            for (let i = 0; i < pointX.length; i++) {
+                const x = parseFloat(pointX[i]);
+                const y = parseFloat(pointY[i]);
+                const r = parseFloat(pointR[i]);
+                if (isNaN(x) || isNaN(y) || isNaN(r)) continue;
 
-    if (table) {
-        for (let item of table.rows) {
-            const x = parseFloat(item.children[0].innerText);
-            const y = parseFloat(item.children[1].innerText);
-            const r = parseFloat(item.children[2].innerText);
-            if (isNaN(x) || isNaN(y) || isNaN(r)) continue;
-
-            let result = (item.children[3].innerText === "Hit");
-            drawPoint(x, y, r, result);
+                let result = pointResult[i] === "true";
+                drawPoint(x, y, r, result);
+            }
         }
-    }
 
     svg.addEventListener("click", (event) => {
         if ((arrayR.includes(selectR.value))) { {
@@ -40,8 +80,12 @@ document.addEventListener("DOMContentLoaded", () => {
             let coord = transform(x, y, selectR.value);
             x = coord[0];
             y = coord[1];
+            selectR.style.border = '1px solid black';
             sendCoordinatesToServer(x, y, selectR.value );
         }
+        }
+        else {
+            selectR.style.border = '3px solid red';
         }
     })
 });
@@ -54,7 +98,7 @@ function transform(x, y , r){
     y = -(y - start)/rPosition * scale;
     return [x, y];
 }
-function untransformed(x, y, r){
+function untransforme(x, y, r){
     let scale = r;
     let start = 150;
     let rPosition = 100;
